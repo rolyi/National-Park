@@ -45,3 +45,25 @@ create table 游客轨迹数据
 foreign key (游客ID) references 游客信息(游客ID),
 foreign key (信息ID) references 流量控制信息(信息ID)
 );
+
+
+-- 游客入园方式统计视图
+CREATE VIEW 游客入园方式统计视图 AS
+SELECT 入园方式, COUNT(游客ID) AS 游客数量, DATE_FORMAT(入园时间, '%Y-%m-%d') AS 入园日期
+FROM 游客信息
+GROUP BY 入园方式, 入园日期;
+
+-- 区域流量预警统计视图
+CREATE VIEW 区域流量预警统计视图 AS
+SELECT 区域编号, 当前状态, 实时在园人数, 日最大承载量, COUNT(信息ID) AS 预警次数, DATE_FORMAT(NOW(), '%Y-%m-%d') AS 统计日期
+FROM 流量控制信息
+WHERE 当前状态 IN ('预警', '限流')
+GROUP BY 区域编号, 当前状态, 实时在园人数, 日最大承载量;
+
+CREATE VIEW 游客违规轨迹统计视图 
+AS  -- 补充AS后缺失的空格，原SQL中AS和SELECT连在一起，存在语法瑕疵
+SELECT   t.游客ID,   t.姓名,   COUNT(tr.轨迹编号) AS 违规次数,   tr.区域编号  -- 若确认该列存在，保留；若不存在，替换为实际列名或调整表别名
+FROM 游客信息 t
+JOIN 游客轨迹数据 tr   ON t.游客ID = tr.游客ID
+WHERE tr.是否超出规定路线 = '是'
+GROUP BY t.游客ID, t.姓名, tr.区域编号;

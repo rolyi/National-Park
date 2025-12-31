@@ -1,0 +1,47 @@
+create table 游客信息
+(
+游客ID int primary key,
+姓名 varchar(50) not null,
+身份证号码 char(18) not null,
+联系方式 varchar(20) not null,
+入园时间 datetime not null,
+离园时间 datetime,
+入园方式 varchar(10) not null  check (入园方式 in ('线上预约','现场购票'))
+);
+
+create table 预约记录
+(
+预约编号 int primary key,
+游客ID int not null,
+预约时间 datetime not null,
+入园时段 varchar(20) not null check(入园时段 in('8:00-12:00','12:00-17:00')),
+同行人数 int not null,
+预约状态 varchar(10) not null check(预约状态 in ('已确认','已取消','已完成')),
+购票金额 numeric(4,1) not null,
+支付状态 varchar(10) not null,
+foreign key (游客ID) references 游客信息(游客ID)
+);
+
+create table 流量控制信息
+(
+信息ID int primary key,
+当前状态 varchar(10) not null check (当前状态 in ('正常','预警','限流')),
+实时在园人数 int not null,
+区域编号 int not null,
+日最大承载量 int not null,
+预警阈值 int
+);
+
+
+create table 游客轨迹数据
+(
+轨迹编号 int primary key,
+游客ID int not null,
+信息ID int not null,
+定位时间 datetime not null,
+经度 numeric(9,6) not null,
+纬度 numeric(9,6) not null,
+是否超出规定路线 char(2) not null,
+foreign key (游客ID) references 游客信息(游客ID),
+foreign key (信息ID) references 流量控制信息(信息ID)
+);

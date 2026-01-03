@@ -3,7 +3,9 @@ from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, DateTime, Numeric, ForeignKey
-from datetime import datetime
+from sqlalchemy import select, update, delete
+from sqlalchemy.exc import SQLAlchemyError
+
 DATABASE_CONFIG = {
     "driver": "mysql+pymysql",
     "user": "yi",
@@ -80,43 +82,106 @@ class 数据_设备监测(Base):
     区域编号 = Column(Integer, nullable=False)
     功能分区 = Column(String(20), nullable=False)
 
-def query_监测指标信息():
-    with get_db_session() as session:
-        列表 = session.query(监测指标信息).all()
-        for 行 in 列表:
-            print(f"指标编号：{行.指标编号}, 指标名称：{行.指标名称}, 计量单位：{行.计量单位}, "
-                  f"阈值上限：{行.阈值上限}, 阈值下限：{行.阈值下限}, 监测频率：{行.监测频率}")
+def update_monitor_threshold(session, 指标编号, 阈值上限=None, 阈值下限=None):
+    try:
+        stmt = update(监测指标信息).where(监测指标信息.指标编号 == 指标编号)
+        update_values = {}
+        if 阈值上限 is not None:
+            update_values['阈值上限'] = 阈值上限
+        if 阈值下限 is not None:
+            update_values['阈值下限'] = 阈值下限
+        if not update_values:
+            return 0
+        stmt = stmt.values(**update_values)
+        result = session.execute(stmt)
+        return result.rowcount
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"更新监测指标阈值失败: {e}")
+        return 0
 
-def query_环境监测数据():
-    with get_db_session() as session:
-        列表 = session.query(环境监测数据).all()
-        for 行 in 列表:
-            print(f"数据编号：{行.数据编号}, 采集时间：{行.采集时间}, 数据质量：{行.数据质量}")
 
-def query_监测设备信息():
-    with get_db_session() as session:
-        列表 = session.query(监测设备信息).all()
-        for 行 in 列表:
-            print(f"设备编号：{行.设备编号}, 设备类型：{行.设备类型}, 安装时间：{行.安装时间}, "
-                  f"校准周期：{行.校准周期}, 校准记录：{行.校准记录}, 通信协议：{行.通信协议}, "
-                  f"运行状态：{行.运行状态}")
+def update_device_status(session, 设备编号, 运行状态=None, 校准记录=None):
+    try:
+        stmt = update(监测设备信息).where(监测设备信息.设备编号 == 设备编号)
+        update_values = {}
+        if 运行状态 is not None:
+            update_values['运行状态'] = 运行状态
+        if 校准记录 is not None:
+            update_values['校准记录'] = 校准记录
+        if not update_values:
+            return 0
+        stmt = stmt.values(**update_values)
+        result = session.execute(stmt)
+        return result.rowcount
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"更新设备信息失败: {e}")
+        return 0
 
-def query_监测指标_数据关联():
-    with get_db_session() as session:
-        列表 = session.query(监测指标_数据关联).all()
-        for 行 in 列表:
-            print(f"指标编号：{行.指标编号}, 数据编号：{行.数据编号}")
 
-def query_数据_设备监测():
-    with get_db_session() as session:
-        列表 = session.query(数据_设备监测).all()
-        for 行 in 列表:
-            print(f"数据编号：{行.数据编号}, 设备编号：{行.设备编号}, 监测值：{行.监测值}, "
-                  f"区域编号：{行.区域编号}, 功能分区：{行.功能分区}")
+def add_environment_data(session, 采集时间, 数据质量):
+    try:
+        new_data = 环境监测数据(
+            采集时间=采集时间,
+            数据质量=数据质量
+        )
+        session.add(new_data)
+        session.flush()  # 生成数据编号
+        return new_data.数据编号
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"添加环境监测数据失败: {e}")
+        return None
 
-if __name__ == "__main__":
-    query_环境监测数据()
-    query_监测指标信息()
-    query_监测设备信息()
-    query_数据_设备监测()
-    query_监测指标_数据关联()
+
+def add_data_device_monitor(session, 数据编号, 设备编号, 监测值, 区域编号, 功能分区):
+    try:
+        new_record = 数据_设备监测(
+            数据编号=数据编号,
+            设备编号=设备编号,
+            监测值=监测值,
+            区域编号=区域编号,
+            功能分区=功能分区
+        )
+        session.add(new_record)
+        return True
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"添加数据_设备监测失败: {e}")
+        return False
+
+
+def delete_environment_data(session, 数据编号):
+    try:
+        # 先删除关联表
+        session.execute(delete(监测指标_数据关联).where(监测指标_数据关联.数据编号 == 数据编号))
+        session.execute(delete(数据_设备监测).where(数据_设备监测.数据编号 == 数据编号))
+        result = session.execute(delete(环境监测数据).where(环境监测数据.数据编号 == 数据编号))
+        return result.rowcount
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"删除环境监测数据失败: {e}")
+        return 0
+
+def query_environment_data_by_id(session, 数据编号):
+    try:
+        stmt = select(环境监测数据).where(环境监测数据.数据编号 == 数据编号)
+        result = session.execute(stmt).scalars().all()
+        return result
+    except SQLAlchemyError as e:
+        print(f"查询环境监测数据失败: {e}")
+        return []
+
+def query_environment_data_by_indicator(session, 指标编号):
+    try:
+        stmt = (
+            select(环境监测数据)
+            .join(监测指标_数据关联, 环境监测数据.数据编号 == 监测指标_数据关联.数据编号)
+            .where(监测指标_数据关联.指标编号 == 指标编号)
+        )
+        result = session.execute(stmt).scalars().all()
+        return result
+    except SQLAlchemyError as e:
+        print(f"按指标编号查询环境监测数据失败: {e}")
+        return []

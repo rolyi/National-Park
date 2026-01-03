@@ -3,7 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, DateTime, Numeric, ForeignKey
-from datetime import datetime
+from sqlalchemy import select, update, delete
+from sqlalchemy.exc import SQLAlchemyError
 DATABASE_CONFIG = {
     "driver": "mysql+pymysql",
     "user": "yi",
@@ -80,62 +81,69 @@ class 物种栖息关系(Base):
     栖息地编号 = Column(Integer, ForeignKey("栖息地信息.栖息地编号"), primary_key=True)
     环境适应性评分 = Column(Integer, nullable=False)
 
-def query_物种信息():
-    with get_db_session() as session:
-        数据列表 = session.query(物种信息).all()
-        for 行 in 数据列表:
-            print(
-                f"物种编号：{行.物种编号}, "
-                f"中文名称：{行.中文名称}, "
-                f"拉丁名：{行.拉丁名}, "
-                f"物种分类：{行.物种分类}, "
-                f"保护级别：{行.保护级别}, "
-                f"生存习性：{行.生存习性}, "
-                f"分布范围：{行.分布范围}"
-            )
+def add_monitor_record(session, 物种编号, 监测设备编号, 监测时间, 经度, 纬度,
+                       监测方式, 监测内容, 记录人ID, 数据状态, 分析结论=None):
+    try:
+        new_record = 监测记录(
+            物种编号=物种编号,
+            监测设备编号=监测设备编号,
+            监测时间=监测时间,
+            经度=经度,
+            纬度=纬度,
+            监测方式=监测方式,
+            监测内容=监测内容,
+            记录人ID=记录人ID,
+            数据状态=数据状态,
+            分析结论=分析结论
+        )
+        session.add(new_record)
+        session.flush()  # 立即生成记录编号
+        return new_record.记录编号
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"添加监测记录失败: {e}")
+        return None
 
-def query_监测记录():
-    with get_db_session() as session:
-        数据列表 = session.query(监测记录).all()
-        for 行 in 数据列表:
-            print(
-                f"记录编号：{行.记录编号}, "
-                f"物种编号：{行.物种编号}, "
-                f"监测设备编号：{行.监测设备编号}, "
-                f"监测时间：{行.监测时间}, "
-                f"经度：{行.经度}, "
-                f"纬度：{行.纬度}, "
-                f"监测方式：{行.监测方式}, "
-                f"监测内容：{行.监测内容}, "
-                f"记录人ID：{行.记录人ID}, "
-                f"数据状态：{行.数据状态}, "
-                f"分析结论：{行.分析结论}"
-            )
+def delete_monitor_record(session, 记录编号):
+    try:
+        stmt = delete(监测记录).where(监测记录.记录编号 == 记录编号)
+        result = session.execute(stmt)
+        return result.rowcount  # 返回删除的行数
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"删除监测记录失败: {e}")
+        return 0
 
-def query_栖息地信息():
-    with get_db_session() as session:
-        数据列表 = session.query(栖息地信息).all()
-        for 行 in 数据列表:
-            print(
-                f"栖息地编号：{行.栖息地编号}, "
-                f"区域名称：{行.区域名称}, "
-                f"生态类型：{行.生态类型}, "
-                f"面积：{行.面积}, "
-                f"核心保护范围：{行.核心保护范围}"
-            )
+def update_monitor_record(session, 记录编号, 数据状态=None, 分析结论=None):
+    try:
+        stmt = update(监测记录).where(监测记录.记录编号 == 记录编号)
+        update_values = {}
+        if 数据状态 is not None:
+            update_values['数据状态'] = 数据状态
+        if 分析结论 is not None:
+            update_values['分析结论'] = 分析结论
+        if not update_values:
+            return 0  # 没有需要更新的值
+        stmt = stmt.values(**update_values)
+        result = session.execute(stmt)
+        return result.rowcount  # 返回更新的行数
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"更新监测记录失败: {e}")
+        return 0
 
-def query_物种栖息关系():
-    with get_db_session() as session:
-        数据列表 = session.query(物种栖息关系).all()
-        for 行 in 数据列表:
-            print(
-                f"物种编号：{行.物种编号}, "
-                f"栖息地编号：{行.栖息地编号}, "
-                f"环境适应性评分：{行.环境适应性评分}"
-            )
+def query_monitor_records(session, 记录编号=None, 物种编号=None, 数据状态=None):
+    try:
+        stmt = select(监测记录)
+        if 记录编号 is not None:
+            stmt = stmt.where(监测记录.记录编号 == 记录编号)
+        if 物种编号 is not None:
+            stmt = stmt.where(监测记录.物种编号 == 物种编号)
+        if 数据状态 is not None:
+            stmt = stmt.where(监测记录.数据状态 == 数据状态)
+        result = session.execute(stmt).scalars().all()
+        return result
+    except SQLAlchemyError as e:
+        print(f"查询监测记录失败: {e}")
+        return []
 
-if __name__ == "__main__":
-    query_物种信息()
-    query_监测记录()
-    query_栖息地信息()
-    query_物种栖息关系()

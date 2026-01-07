@@ -166,6 +166,115 @@ class 数据分析师_生物多样性分析(Base):
     监测内容 = Column(Text)
     分析结论 = Column(Text)
 
+class 监测指标信息(Base):
+    __tablename__ = "监测指标信息"
+
+    指标编号 = Column(Integer, primary_key=True)
+    指标名称 = Column(String(20), nullable=False)
+    计量单位 = Column(String(20), nullable=False)
+    阈值上限 = Column(Numeric(5, 1), nullable=False)
+    阈值下限 = Column(Numeric(5, 1), nullable=False)
+    监测频率 = Column(String(10))
+
+class 环境监测数据(Base):
+    __tablename__ = "环境监测数据"
+
+    数据编号 = Column(Integer, primary_key=True)
+    采集时间 = Column(DateTime, nullable=False)
+    数据质量 = Column(String(10), nullable=False)
+
+class 监测设备信息(Base):
+    __tablename__ = "监测设备信息"
+
+    设备编号 = Column(Integer, primary_key=True)
+    设备类型 = Column(String(20), nullable=False)
+    安装时间 = Column(DateTime, nullable=False)
+    校准周期 = Column(String(10), nullable=False)
+    校准记录 = Column(Text, nullable=False)
+    通信协议 = Column(String(20), nullable=False)
+    运行状态 = Column(String(10), nullable=False)
+
+class 监测指标_数据关联(Base):
+    __tablename__ = "监测指标信息_环境监测数据_关联"
+
+    指标编号 = Column(Integer, ForeignKey("监测指标信息.指标编号"), primary_key=True)
+    数据编号 = Column(Integer, ForeignKey("环境监测数据.数据编号"), primary_key=True)
+
+class 数据_设备监测(Base):
+    __tablename__ = "环境监测数据_监测设备信息_监测"
+
+    数据编号 = Column(Integer, ForeignKey("环境监测数据.数据编号"), primary_key=True)
+    设备编号 = Column(Integer, ForeignKey("监测设备信息.设备编号"), primary_key=True)
+    监测值 = Column(Numeric(5,1), nullable=False)
+    区域编号 = Column(Integer, nullable=False)
+    功能分区 = Column(String(20), nullable=False)
+
+class 技术人员_设备维护(Base):
+    __tablename__ = "技术人员_设备维护"
+
+    设备编号 = Column(Integer, primary_key=True)  # 视图中唯一列
+    设备类型 = Column(String(20))
+    安装时间 = Column(DateTime)
+    校准周期 = Column(String(10))
+    校准记录 = Column(Text)
+    通信协议 = Column(String(20))
+    运行状态 = Column(String(10))
+    区域编号 = Column(Integer)
+    功能分区 = Column(String(20))
+
+
+class 数据分析师_生态环境监测_分析(Base):
+    __tablename__ = "数据分析师_生态环境监测_分析"
+
+    数据编号 = Column(Integer, primary_key=True)  # 假设每条监测数据唯一
+    指标名称 = Column(String(20))
+    计量单位 = Column(String(20))
+    阈值上限 = Column(Numeric(5,1))
+    阈值下限 = Column(Numeric(5,1))
+    采集时间 = Column(DateTime)
+    数据质量 = Column(String(10))
+    监测值 = Column(Numeric(5,1))
+    区域编号 = Column(Integer)
+    功能分区 = Column(String(20))
+
+
+class 数据分析师_生态环境监测_阈值维护(Base):
+    __tablename__ = "数据分析师_生态环境监测_阈值维护"
+
+    指标名称 = Column(String(20), primary_key=True)  # 每个指标唯一
+    计量单位 = Column(String(20))
+    阈值上限 = Column(Numeric(5,1))
+    阈值下限 = Column(Numeric(5,1))
+
+TABLE_MAP = {
+    "物种信息": 物种信息,
+    "监测记录": 监测记录,
+    "栖息地信息": 栖息地信息,
+    "物种信息－栖息地信息－栖息": 物种栖息关系,
+    "生态监测员_日常": 生态监测员_日常,
+    "生态监测员_待核实": 生态监测员_待核实,
+    "数据分析师_生物多样性分析": 数据分析师_生物多样性分析,
+    "监测指标信息": 监测指标信息,
+    "环境监测数据": 环境监测数据,
+    "监测设备信息": 监测设备信息,
+    "监测指标_数据关联":监测指标_数据关联,
+    "数据_设备监测":数据_设备监测,
+    "环境监测数据－监测设备信息－监测":数据_设备监测,
+    "监测指标信息－环境监测数据－关联":监测指标_数据关联,
+    "数据分析师_生态环境监测_阈值维护":数据分析师_生态环境监测_阈值维护,
+    "数据分析师_生态环境监测_分析":数据分析师_生态环境监测_分析,
+    "技术人员_设备维护":技术人员_设备维护
+}
+
+READ_ONLY_VIEWS = {
+    "生态监测员_日常": 生态监测员_日常,
+    "生态监测员_待核实": 生态监测员_待核实,
+    "数据分析师_生物多样性分析": 数据分析师_生物多样性分析,
+    "数据分析师_生态环境监测_阈值维护":数据分析师_生态环境监测_阈值维护,
+    "数据分析师_生态环境监测_分析":数据分析师_生态环境监测_分析,
+    "技术人员_设备维护":技术人员_设备维护
+}
+
 def check_session(username: str):
     now = datetime.now()
 
@@ -182,22 +291,6 @@ def check_session(username: str):
     # 刷新活跃时间
     LAST_ACTIVE_TIME[username] = now
     return True
-
-TABLE_MAP=({
-    "物种信息": 物种信息,
-    "监测记录": 监测记录,
-    "栖息地信息": 栖息地信息,
-    "物种信息－栖息地信息－栖息": 物种栖息关系,
-    "生态监测员_日常": 生态监测员_日常,
-    "生态监测员_待核实": 生态监测员_待核实,
-    "数据分析师_生物多样性分析": 数据分析师_生物多样性分析
-})
-
-READ_ONLY_VIEWS = {
-    "生态监测员_日常",
-    "生态监测员_待核实",
-    "数据分析师_生物多样性分析"
-}
 
 def login(username: str, password: str):
     now = datetime.now()

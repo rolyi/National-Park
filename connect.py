@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, DateTime, Numeric, ForeignKey
 from datetime import datetime, timedelta
-
 LOGIN_FAIL_COUNT = {}
 LOCK_UNTIL = {}
 LAST_ACTIVE_TIME = {}
@@ -12,7 +11,6 @@ LAST_ACTIVE_TIME = {}
 MAX_FAIL_TIMES = 5
 LOCK_DURATION = timedelta(minutes=1)
 SESSION_TIMEOUT = timedelta(minutes=30)
-
 DATABASE_CONFIG = {
     "driver": "mysql+pymysql",
     "user": "yi",
@@ -77,104 +75,96 @@ class role_permissions(Base):
     role_id = Column(Integer, ForeignKey("roles.id"), primary_key=True)
     permission_id = Column(Integer, ForeignKey("permissions.id"), primary_key=True)
 
-class 监测指标信息(Base):
-    __tablename__ = "监测指标信息"
+class 物种信息(Base):
+    __tablename__ = "物种信息"
 
-    指标编号 = Column(Integer, primary_key=True)
-    指标名称 = Column(String(20), nullable=False)
-    计量单位 = Column(String(20), nullable=False)
-    阈值上限 = Column(Numeric(5, 1), nullable=False)
-    阈值下限 = Column(Numeric(5, 1), nullable=False)
-    监测频率 = Column(String(10))
+    物种编号 = Column(Integer, primary_key=True)
+    中文名称 = Column(String(50), nullable=False)
+    拉丁名 = Column(String(50), nullable=False)
+    物种分类 = Column(Text, nullable=False)
+    保护级别 = Column(String(10), nullable=False)
+    生存习性 = Column(Text, nullable=False)
+    分布范围 = Column(Text, nullable=False)
 
-class 环境监测数据(Base):
-    __tablename__ = "环境监测数据"
+class 监测记录(Base):
+    __tablename__ = "监测记录"
 
-    数据编号 = Column(Integer, primary_key=True)
-    采集时间 = Column(DateTime, nullable=False)
-    数据质量 = Column(String(10), nullable=False)
+    记录编号 = Column(Integer, primary_key=True)
+    物种编号 = Column(Integer, ForeignKey("物种信息.物种编号"), nullable=False)
+    监测设备编号 = Column(Integer, nullable=False)
+    监测时间 = Column(DateTime, nullable=False)
+    经度 = Column(Numeric(9, 6), nullable=False)
+    纬度 = Column(Numeric(9, 6), nullable=False)
+    监测方式 = Column(String(10), nullable=False)
+    监测内容 = Column(Text, nullable=False)
+    记录人ID = Column(Integer, nullable=False)
+    数据状态 = Column(String(10), nullable=False)
+    分析结论 = Column(Text)
 
-class 监测设备信息(Base):
-    __tablename__ = "监测设备信息"
+class 栖息地信息(Base):
+    __tablename__ = "栖息地信息"
 
-    设备编号 = Column(Integer, primary_key=True)
-    设备类型 = Column(String(20), nullable=False)
-    安装时间 = Column(DateTime, nullable=False)
-    校准周期 = Column(String(10), nullable=False)
-    校准记录 = Column(Text, nullable=False)
-    通信协议 = Column(String(20), nullable=False)
-    运行状态 = Column(String(10), nullable=False)
-
-class 监测指标_数据关联(Base):
-    __tablename__ = "监测指标信息_环境监测数据_关联"
-
-    指标编号 = Column(Integer, ForeignKey("监测指标信息.指标编号"), primary_key=True)
-    数据编号 = Column(Integer, ForeignKey("环境监测数据.数据编号"), primary_key=True)
-
-class 数据_设备监测(Base):
-    __tablename__ = "环境监测数据_监测设备信息_监测"
-
-    数据编号 = Column(Integer, ForeignKey("环境监测数据.数据编号"), primary_key=True)
-    设备编号 = Column(Integer, ForeignKey("监测设备信息.设备编号"), primary_key=True)
-    监测值 = Column(Numeric(5,1), nullable=False)
-    区域编号 = Column(Integer, nullable=False)
-    功能分区 = Column(String(20), nullable=False)
-
-class 技术人员_设备维护(Base):
-    __tablename__ = "技术人员_设备维护"
-
-    设备编号 = Column(Integer, primary_key=True)  # 视图中唯一列
-    设备类型 = Column(String(20))
-    安装时间 = Column(DateTime)
-    校准周期 = Column(String(10))
-    校准记录 = Column(Text)
-    通信协议 = Column(String(20))
-    运行状态 = Column(String(10))
-    区域编号 = Column(Integer)
-    功能分区 = Column(String(20))
+    栖息地编号 = Column(Integer, primary_key=True)
+    区域名称 = Column(String(50), nullable=False)
+    生态类型 = Column(String(20), nullable=False)
+    面积 = Column(Numeric(5, 1), nullable=False)
+    核心保护范围 = Column(Text, nullable=False)
 
 
-class 数据分析师_生态环境监测_分析(Base):
-    __tablename__ = "数据分析师_生态环境监测_分析"
+class 物种栖息关系(Base):
+    __tablename__ = "物种信息_栖息地信息_栖息"
 
-    数据编号 = Column(Integer, primary_key=True)  # 假设每条监测数据唯一
-    指标名称 = Column(String(20))
-    计量单位 = Column(String(20))
-    阈值上限 = Column(Numeric(5,1))
-    阈值下限 = Column(Numeric(5,1))
-    采集时间 = Column(DateTime)
-    数据质量 = Column(String(10))
-    监测值 = Column(Numeric(5,1))
-    区域编号 = Column(Integer)
-    功能分区 = Column(String(20))
+    物种编号 = Column(Integer, ForeignKey("物种 信息.物种编号"), primary_key=True)
+    栖息地编号 = Column(Integer, ForeignKey("栖息地信息.栖息地编号"), primary_key=True)
+    环境适应性评分 = Column(Integer, nullable=False)
+
+class 生态监测员_日常(Base):
+    __tablename__ = "生态监测员_日常"
+    记录编号 = Column(Integer, primary_key=True)
+    物种编号 = Column(Integer)
+    中文名称 = Column(String(50))
+    拉丁名 = Column(String(50))
+    物种分类 = Column(Text)
+    保护级别 = Column(String(10))
+    栖息地编号 = Column(Integer)
+    区域名称 = Column(String(50))
+    生态类型 = Column(String(20))
+    监测设备编号 = Column(Integer)
+    监测时间 = Column(DateTime)
+    监测方式 = Column(String(10))
+    监测内容 = Column(Text)
+    经度 = Column(Numeric(9,6))
+    纬度 = Column(Numeric(9,6))
+    记录人ID = Column(Integer)
+    数据状态 = Column(String(10))
+    分析结论 = Column(Text)
 
 
-class 数据分析师_生态环境监测_阈值维护(Base):
-    __tablename__ = "数据分析师_生态环境监测_阈值维护"
+class 生态监测员_待核实(Base):
+    __tablename__ = "生态监测员_待核实"
+    记录编号 = Column(Integer, primary_key=True)
+    监测时间 = Column(DateTime)
+    监测方式 = Column(String(10))
+    监测内容 = Column(Text)
+    经度 = Column(Numeric(9,6))
+    纬度 = Column(Numeric(9,6))
+    数据状态 = Column(String(10))
+    分析结论 = Column(Text)
 
-    指标名称 = Column(String(20), primary_key=True)  # 每个指标唯一
-    计量单位 = Column(String(20))
-    阈值上限 = Column(Numeric(5,1))
-    阈值下限 = Column(Numeric(5,1))
 
-TABLE_MAP = {
-    "监测指标信息": 监测指标信息,
-    "环境监测数据": 环境监测数据,
-    "监测设备信息": 监测设备信息,
-    "监测指标_数据关联":监测指标_数据关联,
-    "数据_设备监测":数据_设备监测,
-    "环境监测数据－监测设备信息－监测":数据_设备监测,
-    "监测指标信息－环境监测数据－关联":监测指标_数据关联,
-    "数据分析师_生态环境监测_阈值维护":数据分析师_生态环境监测_阈值维护,
-    "数据分析师_生态环境监测_分析":数据分析师_生态环境监测_分析,
-    "技术人员_设备维护":技术人员_设备维护
-}
-
-READ_ONLY_VIEWS = {
-    "数据分析师_生态环境监测_阈值维护":数据分析师_生态环境监测_阈值维护,
-    "数据分析师_生态环境监测_分析":数据分析师_生态环境监测_分析,
-    "技术人员_设备维护":技术人员_设备维护
-}
+class 数据分析师_生物多样性分析(Base):
+    __tablename__ = "数据分析师_生物多样性分析"
+    记录编号 = Column(Integer, primary_key=True)
+    中文名称 = Column(String(50))
+    生存习性 = Column(Text)
+    分布范围 = Column(Text)
+    监测时间 = Column(DateTime)
+    经度 = Column(Numeric(9,6))
+    纬度 = Column(Numeric(9,6))
+    区域名称 = Column(String(50))
+    生态类型 = Column(String(20))
+    监测内容 = Column(Text)
+    分析结论 = Column(Text)
 
 def check_session(username: str):
     now = datetime.now()
@@ -192,6 +182,22 @@ def check_session(username: str):
     # 刷新活跃时间
     LAST_ACTIVE_TIME[username] = now
     return True
+
+TABLE_MAP=({
+    "物种信息": 物种信息,
+    "监测记录": 监测记录,
+    "栖息地信息": 栖息地信息,
+    "物种信息－栖息地信息－栖息": 物种栖息关系,
+    "生态监测员_日常": 生态监测员_日常,
+    "生态监测员_待核实": 生态监测员_待核实,
+    "数据分析师_生物多样性分析": 数据分析师_生物多样性分析
+})
+
+READ_ONLY_VIEWS = {
+    "生态监测员_日常",
+    "生态监测员_待核实",
+    "数据分析师_生物多样性分析"
+}
 
 def login(username: str, password: str):
     now = datetime.now()

@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, DateTime, Numeric, ForeignKey
 from datetime import datetime, timedelta
-
 LOGIN_FAIL_COUNT = {}
 LOCK_UNTIL = {}
 LAST_ACTIVE_TIME = {}
@@ -12,7 +11,6 @@ LAST_ACTIVE_TIME = {}
 MAX_FAIL_TIMES = 5
 LOCK_DURATION = timedelta(minutes=1)
 SESSION_TIMEOUT = timedelta(minutes=30)
-
 DATABASE_CONFIG = {
     "driver": "mysql+pymysql",
     "user": "yi",

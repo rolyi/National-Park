@@ -67,3 +67,36 @@ FROM 游客信息 t
 JOIN 游客轨迹数据 tr   ON t.游客ID = tr.游客ID
 WHERE tr.是否超出规定路线 = '是'
 GROUP BY t.游客ID, t.姓名, tr.区域编号;
+
+
+
+-- 插入“游客”和“公园管理员”角色
+INSERT INTO roles (id, role_name)
+VALUES 
+(4, '游客'),
+(5, '公园管理员');
+
+
+-- 插入游客管理业务对应的资源权限（假设当前permissions表最大id为N，需替换为实际最大id+1）
+INSERT INTO permissions (id, resource)
+VALUES 
+-- 替换下方id为实际连续值（例如当前最大id是5，则从6开始）
+(16, '游客信息'息,
+(17, '预约记录'录,
+(18, '流量控制信息'息,
+(19, '游客轨迹数据'据,
+(20, '游客违规轨迹视图'图;
+
+-- 1. 给“游客”角色（id=4）分配权限
+INSERT INTO role_permissions (role_id, permission_id)
+VALUES 
+(4, 7),  -- 游客可操作“预约记录”
+(4, 6);  -- 游客可查看“游客信息（个人）”
+-- 2. 给“公园管理员”角色（id=5）分配权限
+INSERT INTO role_permissions (role_id, permission_id)
+VALUES 
+(5, 16),   -- 公园管理员可操作“游客信息”
+(5, 17),   -- 公园管理员可操作“预约记录”
+(5, 18),   -- 公园管理员可操作“流量控制信息”
+(5, 19),   -- 公园管理员可操作“游客轨迹数据”
+(5, 20);  -- 公园管理员可查看“游客违规轨迹视图”

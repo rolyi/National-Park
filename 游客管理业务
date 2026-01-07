@@ -53,6 +53,8 @@ SELECT 入园方式, COUNT(游客ID) AS 游客数量, DATE_FORMAT(入园时间, 
 FROM 游客信息
 GROUP BY 入园方式, 入园日期;
 
+ALTER TABLE 预约记录 MODIFY COLUMN 预约编号 INT AUTO_INCREMENT;
+
 -- 区域流量预警统计视图
 CREATE VIEW 区域流量预警统计视图 AS
 SELECT 区域编号, 当前状态, 实时在园人数, 日最大承载量, COUNT(信息ID) AS 预警次数, DATE_FORMAT(NOW(), '%Y-%m-%d') AS 统计日期
